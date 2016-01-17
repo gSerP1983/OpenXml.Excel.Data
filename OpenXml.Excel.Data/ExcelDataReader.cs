@@ -18,14 +18,12 @@ namespace OpenXml.Excel.Data
         private OpenXmlReader _reader;
         private OpenXmlElement _currentRow;
         private readonly string[] _headers;
-        private readonly IDictionary<int, string> _sharedStringTable;
+        private readonly IDictionary<int, string> _sharedStrings;
 
         public ExcelDataReader(string path, int sheetIndex = 0, bool firstRowAsHeader = true)
         {
             _document = SpreadsheetDocument.Open(path, false);
-            _sharedStringTable = _document.WorkbookPart.SharedStringTablePart.SharedStringTable
-                .Select((x, i) => Tuple.Create(i, x.InnerText))
-                .ToDictionary(x => x.Item1, x => x.Item2);
+            _sharedStrings = GetSharedStrings(_document);
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByIndex(sheetIndex).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
@@ -35,9 +33,7 @@ namespace OpenXml.Excel.Data
         public ExcelDataReader(Stream stream, int sheetIndex = 0, bool firstRowAsHeader = true)
         {
             _document = SpreadsheetDocument.Open(stream, false);
-            _sharedStringTable = _document.WorkbookPart.SharedStringTablePart.SharedStringTable
-                .Select((x, i) => Tuple.Create(i, x.InnerText))
-                .ToDictionary(x => x.Item1, x => x.Item2);
+            _sharedStrings = GetSharedStrings(_document);
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByIndex(sheetIndex).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
@@ -47,9 +43,7 @@ namespace OpenXml.Excel.Data
         public ExcelDataReader(string path, string sheetName, bool firstRowAsHeader = true)
         {
             _document = SpreadsheetDocument.Open(path, false);
-            _sharedStringTable = _document.WorkbookPart.SharedStringTablePart.SharedStringTable
-                .Select((x, i) => Tuple.Create(i, x.InnerText))
-                .ToDictionary(x => x.Item1, x => x.Item2);
+            _sharedStrings = GetSharedStrings(_document);
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByName(sheetName).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
@@ -59,9 +53,7 @@ namespace OpenXml.Excel.Data
         public ExcelDataReader(Stream stream, string sheetName, bool firstRowAsHeader = true)
         {
             _document = SpreadsheetDocument.Open(stream, false);
-            _sharedStringTable = _document.WorkbookPart.SharedStringTablePart.SharedStringTable
-                .Select((x, i) => Tuple.Create(i, x.InnerText))
-                .ToDictionary(x => x.Item1, x => x.Item2);
+            _sharedStrings = GetSharedStrings(_document);
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByName(sheetName).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
@@ -81,10 +73,8 @@ namespace OpenXml.Excel.Data
         {
             var sheets = GetSheets().ToArray();
             if (sheetIndex < 0 || sheetIndex >= sheets.Count())
-            {
-                Dispose();
                 throw new ApplicationException(Error.NotFoundSheetIndex(sheetIndex));
-            }
+
             return sheets.ElementAt(sheetIndex);
         }
 
@@ -92,10 +82,8 @@ namespace OpenXml.Excel.Data
         {
             var sheet = GetSheets().FirstOrDefault(x => x.Name == sheetName);
             if (sheet == null)
-            {
-                Dispose();
                 throw new ApplicationException(Error.NotFoundSheetName(sheetName));
-            }
+
             return sheet;
         }
 
@@ -134,9 +122,16 @@ namespace OpenXml.Excel.Data
             return Enumerable.Range(0, count).Select(x => "col" + x).ToArray();
         }
 
+        private static IDictionary<int, string> GetSharedStrings(SpreadsheetDocument document)
+        {
+            return document.WorkbookPart.SharedStringTablePart.SharedStringTable
+                .Select((x, i) => Tuple.Create(i, x.InnerText))
+                .ToDictionary(x => x.Item1, x => x.Item2);
+        }
+
         private string GetCellValue(CellType cell)
         {
-            if (cell.CellValue == null)
+            if (cell == null || cell.CellValue == null)
                 return null;
 
             var value = cell.CellValue.InnerXml;
@@ -145,7 +140,7 @@ namespace OpenXml.Excel.Data
 
             int index;            
             if (int.TryParse(value, out index) && cell.DataType != null && cell.DataType.Value == CellValues.SharedString)
-                return _sharedStringTable[index];
+                return _sharedStrings[index];
 
             return value;
         }
@@ -159,22 +154,9 @@ namespace OpenXml.Excel.Data
 
             var list = new Cell[capacity];
             foreach (var cell in cells)
-                list[GetColumnIndexByName(cell.CellReference.Value)] = cell;
+                list[ExcelUtil.GetColumnIndexByName(cell.CellReference.Value)] = cell;
 
             return list;
-        }
-
-        private static int GetColumnIndexByName(string colName)
-        {
-            var name = Regex.Replace(colName, @"\d", "");
-
-            int number = 0, pow = 1;
-            for (var i = name.Length - 1; i >= 0; i--)
-            {
-                number += (name[i] - 'A' + 1) * pow;
-                pow *= 26;
-            }
-            return number - 1;
         }
 
         #endregion
@@ -367,7 +349,7 @@ namespace OpenXml.Excel.Data
         {
             var num = values.Length < _headers.Length ? values.Length : _headers.Length;
             var row = AdjustRow(_currentRow, num)
-                .Select(x => x == null ? null : GetCellValue(x))
+                .Select(GetCellValue)
                 .ToArray();
 
             for (var i = 0; i < num; i++)

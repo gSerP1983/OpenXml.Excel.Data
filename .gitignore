@@ -279,3 +279,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+*.ncrunchsolution
+OpenXml.Excel.Data.Test/OpenXml.Excel.Data.Test.ncrunchproject
+*.ncrunchproject
