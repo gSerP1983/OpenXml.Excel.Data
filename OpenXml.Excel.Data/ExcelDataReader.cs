@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -154,7 +153,11 @@ namespace OpenXml.Excel.Data
 
             var list = new Cell[capacity];
             foreach (var cell in cells)
-                list[ExcelUtil.GetColumnIndexByName(cell.CellReference.Value)] = cell;
+            {
+                var index = ExcelUtil.GetColumnIndexByName(cell.CellReference.Value);
+                if (index < capacity)
+                    list[index] = cell;
+            }
 
             return list;
         }

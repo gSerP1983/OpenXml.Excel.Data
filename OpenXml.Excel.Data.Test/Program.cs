@@ -5,13 +5,11 @@ namespace OpenXml.Excel.Data.Test
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             var dt = new DataTable();
-            using (var reader = new ExcelDataReader(@"C:\Users\s-petrov.COMPULINK\Desktop\excelImport\xlsx\05 НУК 1501-3000-10000.xlsx"))
-            {                
+            using (var reader = new ExcelDataReader(@"test.xlsx"))           
                 dt.Load(reader);
-            }
 
             Console.WriteLine("done: " + dt.Rows.Count);
             Console.ReadKey();
