@@ -276,51 +276,48 @@ namespace OpenXml.Excel.Data
 
         public DateTime GetDateTime(int i)
         {
-            return SafeConverter.Convert<DateTime>(GetValue(i));
+            return DateTime.FromOADate(GetDouble(i));
         }
 
         public decimal GetDecimal(int i)
         {
             var value = GetValue(i);
-            if (value == null)
-                return default(decimal);
-
-            decimal num;
-            if (decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
-                return num;
-
-            return SafeConverter.Convert<decimal>(GetValue(i));
+            if (value != null)
+            {
+                decimal num;
+                if (decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
+                    return num;
+            }
+            return SafeConverter.Convert<decimal>(value);
         }
 
         public double GetDouble(int i)
         {
             var value = GetValue(i);
-            if (value == null)
-                return default(double);
-
-            double num;
-            if (double.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
-                return num;
-
-            return SafeConverter.Convert<double>(GetValue(i));
-        }
-
-        public Type GetFieldType(int i)
-        {
-            return typeof (string);
+            if (value != null)
+            {
+                double num;
+                if (double.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
+                    return num;
+            }
+            return SafeConverter.Convert<double>(value);
         }
 
         public float GetFloat(int i)
         {
             var value = GetValue(i);
-            if (value == null)
-                return default(float);
+            if (value != null)
+            {
+                float num;
+                if (float.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
+                    return num;
+            }
+            return SafeConverter.Convert<float>(value);
+        }
 
-            float num;
-            if (float.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
-                return num;
-
-            return SafeConverter.Convert<float>(GetValue(i));
+        public Type GetFieldType(int i)
+        {
+            return typeof(string);
         }
 
         public Guid GetGuid(int i)

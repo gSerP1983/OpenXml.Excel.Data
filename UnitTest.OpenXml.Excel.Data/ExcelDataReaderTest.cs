@@ -105,7 +105,7 @@ namespace UnitTest.OpenXml.Excel.Data
                 Assert.AreEqual("Mr Brown", reader[1]);
                 Assert.AreEqual("Mr Brown", reader["Name"]);
 
-                // todo DateTime not work
+                Assert.AreEqual(new DateTime(1983, 3, 27, 6, 55, 0), reader.GetDateTime(2));
 
                 Assert.AreEqual(new Guid("6E2BF784-F116-494A-916D-9DFF9B2A2AA0"), reader.GetGuid(3));
 
