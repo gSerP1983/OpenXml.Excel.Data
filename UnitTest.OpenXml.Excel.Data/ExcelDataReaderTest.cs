@@ -105,12 +105,18 @@ namespace UnitTest.OpenXml.Excel.Data
                 Assert.AreEqual("Mr Brown", reader[1]);
                 Assert.AreEqual("Mr Brown", reader["Name"]);
 
+                // todo DateTime not work
+
                 Assert.AreEqual(new Guid("6E2BF784-F116-494A-916D-9DFF9B2A2AA0"), reader.GetGuid(3));
 
                 Assert.AreEqual(32, reader.GetInt16(4));
                 Assert.AreEqual(32, reader.GetInt32(4));
                 Assert.AreEqual(32, reader.GetInt64(4));
                 Assert.AreEqual(32, reader.GetByte(4));
+
+                Assert.AreEqual(917.68m, reader.GetDecimal(5));
+                Assert.AreEqual(917.68d, reader.GetDouble(5));
+                Assert.AreEqual(917.68f, reader.GetFloat(5));
 
                 Assert.AreEqual(true, reader.GetBoolean(6));
             }

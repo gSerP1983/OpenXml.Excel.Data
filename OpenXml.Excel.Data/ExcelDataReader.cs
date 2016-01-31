@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using DocumentFormat.OpenXml;
@@ -88,19 +89,14 @@ namespace OpenXml.Excel.Data
 
         private string[] GetFirstRowAsHeaders()
         {
-            string[] result;
-
+            var result = new string[] { };
             if (Read())
             {
                 result = _currentRow.Elements<Cell>()
                     .Select(GetCellValue)
                     .ToArray();
             }
-            else
-                result = new string[] {};
-
             _currentRow = null;
-
             return result;
         }
 
@@ -285,11 +281,27 @@ namespace OpenXml.Excel.Data
 
         public decimal GetDecimal(int i)
         {
+            var value = GetValue(i);
+            if (value == null)
+                return default(decimal);
+
+            decimal num;
+            if (decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
+                return num;
+
             return SafeConverter.Convert<decimal>(GetValue(i));
         }
 
         public double GetDouble(int i)
         {
+            var value = GetValue(i);
+            if (value == null)
+                return default(double);
+
+            double num;
+            if (double.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
+                return num;
+
             return SafeConverter.Convert<double>(GetValue(i));
         }
 
@@ -300,6 +312,14 @@ namespace OpenXml.Excel.Data
 
         public float GetFloat(int i)
         {
+            var value = GetValue(i);
+            if (value == null)
+                return default(float);
+
+            float num;
+            if (float.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out num))
+                return num;
+
             return SafeConverter.Convert<float>(GetValue(i));
         }
 
