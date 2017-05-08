@@ -27,6 +27,7 @@ namespace OpenXml.Excel.Data
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByIndex(sheetIndex).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
+            SkipRows(GetEmptyRowsCount(worksheetPart));
             _headers = firstRowAsHeader ? GetFirstRowAsHeaders() : GetRangeHeaders(worksheetPart);
         }
 
@@ -37,6 +38,7 @@ namespace OpenXml.Excel.Data
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByIndex(sheetIndex).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
+            SkipRows(GetEmptyRowsCount(worksheetPart));
             _headers = firstRowAsHeader ? GetFirstRowAsHeaders() : GetRangeHeaders(worksheetPart);
         }
 
@@ -47,6 +49,7 @@ namespace OpenXml.Excel.Data
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByName(sheetName).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
+            SkipRows(GetEmptyRowsCount(worksheetPart));
             _headers = firstRowAsHeader ? GetFirstRowAsHeaders() : GetRangeHeaders(worksheetPart);
         }
 
@@ -57,10 +60,44 @@ namespace OpenXml.Excel.Data
 
             var worksheetPart = _document.WorkbookPart.GetPartById(GetSheetByName(sheetName).Id.Value);
             _reader = OpenXmlReader.Create(worksheetPart);
+            SkipRows(GetEmptyRowsCount(worksheetPart));
             _headers = firstRowAsHeader ? GetFirstRowAsHeaders() : GetRangeHeaders(worksheetPart);
         }
 
         #region methods
+
+        private void SkipRows(int count)
+        {
+            for (var i = 0; i < count; i++)
+                SkipRow();
+        }
+
+        private void SkipRow()
+        {
+            while (_reader.Read())
+                if (_reader.ElementType == typeof(Row) && _reader.IsEndElement)
+                    break;
+        }
+
+        private static int GetEmptyRowsCount(OpenXmlPart worksheetPart)
+        {
+            var emptyRowsCount = 0;
+            using (var reader = OpenXmlReader.Create(worksheetPart))
+            {
+                while (reader.Read())
+                {
+                    if (reader.ElementType == typeof(Row))
+                    {
+                        var row = reader.LoadCurrentElement();
+                        if (!string.IsNullOrEmpty(row.InnerText))
+                            break;
+
+                        emptyRowsCount ++;
+                    }
+                }
+            }
+            return emptyRowsCount;
+        }
 
         private IEnumerable<Sheet> GetSheets()
         {
@@ -92,7 +129,7 @@ namespace OpenXml.Excel.Data
             var result = new string[] { };
             if (Read())
             {
-                result = _currentRow.Elements<Cell>()
+                result = AdjustRow(_currentRow, -1)
                     .Select(GetCellValue)
                     .ToArray();
             }
@@ -145,15 +182,17 @@ namespace OpenXml.Excel.Data
             if (row == null)
                 return new Cell[] {};
 
-            var cells = row.Elements<Cell>();
+            var cells = row.Elements<Cell>().ToArray();
+            if (capacity == -1)
+                capacity = cells.Count();
 
-            var list = new Cell[capacity];
-            foreach (var cell in cells)
-            {
-                var index = ExcelUtil.GetColumnIndexByName(cell.CellReference.Value);
-                if (index < capacity)
-                    list[index] = cell;
-            }
+            var list = cells
+                .OrderBy(x => ExcelUtil.GetColumnIndexByName(x.CellReference.Value))
+                .Take(capacity)
+                .ToList();
+
+            while (list.Count() < capacity)
+                list.Add(new Cell());
 
             return list;
         }
@@ -194,6 +233,9 @@ namespace OpenXml.Excel.Data
                 if (_reader.ElementType == typeof (Row))
                 {
                     _currentRow = _reader.LoadCurrentElement();
+                    // skip empty rows
+                    if (string.IsNullOrEmpty(_currentRow.InnerText))
+                        continue;
                     break;
                 }
             }

@@ -64,6 +64,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="NoDataReturned.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="test.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -10,6 +10,17 @@ namespace UnitTest.OpenXml.Excel.Data
     public class ExcelDataReaderTest
     {
         [TestMethod]
+        public void OpenPathEmptyRowsTest()
+        {
+            var dt = new DataTable();
+            using (var reader = new ExcelDataReader(@"NoDataReturned.xlsx", "ContractIBNR"))
+                dt.Load(reader);
+
+            Assert.AreEqual(5, dt.Columns.Count);
+            Assert.AreEqual(1, dt.Rows.Count);
+        }
+
+        [TestMethod]
         public void OpenPathHdrDefaultSheetTest()
         {
             var dt = new DataTable();
